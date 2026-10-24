@@ -1,0 +1,46 @@
+tts-api-plugin —— 把文字合成成语音（命令行）
+
+用法：
+  node src/cli.mjs --text "要念的话" --out hello.mp3
+  node src/cli.mjs --file script.txt --voice 冰糖 --format mp3 --out out.mp3
+  echo "管道喂进来的文字也行" | node src/cli.mjs --out out.mp3
+  node src/cli.mjs --list-models          # 读接口的模型列表（OpenAI 兼容 /v1/models）
+  node src/cli.mjs --print-defaults       # 打印出厂请求头 / 请求体模板
+  node src/cli.mjs --describe             # 看当前配置有没有配全、缺什么
+
+文本：
+  --text <s>            要念的文字
+  --file <path>         从文件读（UTF-8）
+  （两者都没有且 stdin 不是终端时，从 stdin 读）
+
+输出：
+  --out <path>          写到指定文件（默认 audio/tts-<时间>-<随机>.mp3）
+  --dir <path>          输出目录（不给 --out 时用）
+  --keep                给了 --out 时保留 audio/ 里的原始文件
+
+引擎与音色：
+  --engine <name>       auto（默认）| custom | edge | sapi
+                        auto = custom 配好了就先走 custom，失败按 fallback 退 edge，再退 sapi
+  --voice <name>        音色 id（custom 用接口那边的音色名；edge 用 zh-CN-XiaoyiNeural 之类）
+  --format <mp3|wav>    custom 引擎要求的容器格式
+  --model <name>        模型 id（配合请求体里的 {模型} 占位符）
+  --voice-mode <id|file>  file = 用克隆样本（配合 --voice-file）
+  --voice-file <rel>    语音库内的相对路径，如 voice-samples/me.mp3
+  --max-chars <n>       单次文字上限，默认 2000
+  --timeout <ms>        请求超时，默认 60000
+
+配置：
+  --config <path>       配置文件（默认 ./tts.config.json，可参考 tts.config.example.json）
+  --url <url>           接口地址（覆盖配置）
+  --key <key>           API 密钥（覆盖配置；也可用环境变量 TTS_KEY）
+  --headers-text <s>    请求头模块（JSON 文本，含中文占位符）
+  --body-text <s>       请求体模块（文本，含中文占位符）
+  --provider <name>     同 --engine 的 auto/custom/edge/sapi
+
+环境变量：TTS_URL / TTS_KEY / TTS_MODEL / TTS_VOICE / TTS_FORMAT / TTS_ENGINE / TTS_PROVIDER
+
+占位符（只替换这些，别的字节原样发出去）：
+  {要念的话} {音色} {音色样本} {模型} {格式} {密钥}
+  （也认英文别名 {text} {voice} {sample} {model} {format} {apiKey}）
+
+退出码：0 成功；1 失败（错误原因打到 stderr）

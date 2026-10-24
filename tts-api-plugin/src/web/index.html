@@ -1,0 +1,375 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TTS 语音接口 · 配置</title>
+<style>
+  :root{
+    --bg:#0f1115; --panel:#171a21; --panel2:#1d2129; --line:#2a2f3a;
+    --text:#e6e8ee; --muted:#9aa3b2; --accent:#4f9cf9; --ok:#38b48b; --warn:#e0a33e; --err:#e06c6c;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 "Segoe UI","Microsoft YaHei",system-ui,sans-serif}
+  a{color:var(--accent)}
+  .wrap{max-width:960px;margin:0 auto;padding:28px 20px 80px}
+  header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  h1{font-size:22px;margin:0;font-weight:600}
+  .sub{color:var(--muted);font-size:13px}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:12px;border:1px solid var(--line);background:var(--panel2)}
+  .pill.ok{color:var(--ok);border-color:#245}
+  .pill.warn{color:var(--warn);border-color:#443}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px 20px;margin-top:18px}
+  .card h2{font-size:15px;margin:0 0 4px;font-weight:600}
+  .card .hint{color:var(--muted);font-size:12.5px;margin:0 0 14px}
+  .row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:10px 0}
+  .row > label.k{flex:0 0 96px;color:var(--muted);font-size:13px}
+  input[type=text],input[type=password],input[type=number],select,textarea{
+    background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;font:inherit;outline:none;min-width:0
+  }
+  input[type=text]:focus,input[type=password]:focus,input[type=number]:focus,select:focus,textarea:focus{border-color:var(--accent)}
+  .grow{flex:1 1 240px}
+  textarea{width:100%;resize:vertical;font-family:Consolas,"Courier New",monospace;font-size:12.5px;line-height:1.55}
+  button{background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 14px;font:inherit;cursor:pointer}
+  button:hover{border-color:#3a4250}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#08121f;font-weight:600}
+  button.primary:hover{filter:brightness(1.06)}
+  button.ghost{background:transparent}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .meta{color:var(--muted);font-size:12.5px}
+  .msg{margin-top:10px;font-size:13px;min-height:20px}
+  .msg.ok{color:var(--ok)} .msg.err{color:var(--err)} .msg.warn{color:var(--warn)}
+  audio{width:100%;margin-top:12px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 0}
+  .chip{font-size:12px;color:var(--muted);border:1px dashed var(--line);border-radius:999px;padding:2px 9px}
+  footer{color:var(--muted);font-size:12.5px;margin-top:26px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>TTS 语音接口</h1>
+    <span id="statusPill" class="pill">读取中…</span>
+    <span class="sub">把文字变成声音的接口配置（小米 MiMo 或任意 OpenAI 兼容接口）</span>
+  </header>
+
+  <div class="card">
+    <h2>接口</h2>
+    <p class="hint">请求头与请求体会原样发出，只替换中文占位符，不自动补 Authorization / Content-Type。</p>
+
+    <div class="row">
+      <label class="k" for="url">接口地址</label>
+      <input class="grow" type="text" id="url" placeholder="https://api.xiaomimimo.com/v1/chat/completions" spellcheck="false">
+      <select id="method" title="请求方法">
+        <option value="POST">POST</option>
+        <option value="GET">GET</option>
+      </select>
+    </div>
+    <div class="chips">
+      <span class="chip" data-preset="mimo" title="小米 MiMo">填 MiMo 地址</span>
+      <span class="chip" data-preset="openai" title="OpenAI 兼容">填 OpenAI 地址</span>
+    </div>
+
+    <div class="row">
+      <label class="k" for="apiKey">密钥</label>
+      <input class="grow" type="password" id="apiKey" placeholder="留空则不修改；只用于 {密钥} 占位符" autocomplete="off">
+      <span class="meta" id="keyState"></span>
+    </div>
+
+    <div class="row">
+      <label class="k" for="model">模型</label>
+      <select class="grow" id="model"><option value="">（先读取模型）</option></select>
+      <button id="loadModels" type="button">读取模型</button>
+      <span class="meta" id="modelsMsg"></span>
+    </div>
+
+    <div class="row">
+      <label class="k" for="voice">音色</label>
+      <select class="grow" id="voice"></select>
+      <input type="text" id="voiceCustom" class="grow" placeholder="或直接填音色 id" style="max-width:220px">
+    </div>
+
+    <div class="row">
+      <label class="k" for="format">格式</label>
+      <select id="format">
+        <option value="mp3">mp3</option>
+        <option value="wav">wav</option>
+        <option value="pcm">pcm</option>
+      </select>
+      <label class="k" for="timeoutMs" style="flex:0 0 auto;margin-left:12px">超时</label>
+      <input type="number" id="timeoutMs" style="width:110px" min="3000" max="300000" step="1000">
+      <span class="meta">ms</span>
+    </div>
+
+    <div class="row">
+      <label class="k" for="provider">引擎</label>
+      <select id="provider">
+        <option value="auto">auto（配好就用自定义，否则 edge）</option>
+        <option value="custom">custom（只用自定义接口）</option>
+        <option value="edge">edge（微软在线，免密钥）</option>
+        <option value="sapi">sapi（本机离线）</option>
+      </select>
+      <label class="meta" style="display:flex;align-items:center;gap:6px">
+        <input type="checkbox" id="fallback"> 自定义失败时降级到 edge / sapi
+      </label>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>请求头模块</h2>
+    <p class="hint">JSON 对象文本。占位符：<b>{密钥}</b> <b>{音色}</b> <b>{模型}</b>。原样发送，不改大小写、不排序。</p>
+    <textarea id="headersText" rows="5" spellcheck="false"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button id="saveHeaders" class="primary" type="button">保存请求头</button>
+      <button id="resetHeaders" class="ghost" type="button">复原为初始请求头</button>
+      <span class="msg" id="headersMsg"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>请求体模块</h2>
+    <p class="hint">占位符：<b>{要念的话}</b> <b>{音色}</b> <b>{音色样本}</b> <b>{模型}</b> <b>{格式}</b> <b>{密钥}</b>。原样发送——不 parse、不重排、不补字段。</p>
+    <textarea id="bodyText" rows="12" spellcheck="false"></textarea>
+    <div class="row" style="margin-top:10px">
+      <button id="saveBody" class="primary" type="button">保存请求体</button>
+      <button id="resetBody" class="ghost" type="button">复原为初始请求体</button>
+      <span class="msg" id="bodyMsg"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>试合成</h2>
+    <p class="hint">只在本机合成并播放，不发给任何人。</p>
+    <div class="row">
+      <input class="grow" type="text" id="testText" value="这是一段测试语音，用来确认接口能出声。" spellcheck="false">
+      <button id="play" class="primary" type="button">合成并试听</button>
+      <button id="stop" class="ghost" type="button">停止播放</button>
+    </div>
+    <div class="msg" id="playMsg"></div>
+    <audio id="player" controls preload="none"></audio>
+  </div>
+
+  <div class="row" style="justify-content:center;margin-top:22px">
+    <button id="saveAll" class="primary" type="button">保存全部配置</button>
+    <span class="msg" id="saveMsg"></span>
+  </div>
+
+  <footer>配置文件：<code id="cfgPath">tts.config.json</code> · 保存后立即生效，不需要重启</footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const VOICES = ['（默认）', '冰糖', '茉莉', '苏打', '白桦', 'Mia', 'Chloe', 'Milo', 'Dean'];
+let cfg = null;         // GET /api/config 的 config
+let defaults = { headers: '', body: '' };
+let playing = null;     // objectURL
+let currentVoice = '';
+
+function setMsg(el, text, kind) {
+  el.textContent = text || '';
+  el.className = 'msg' + (kind ? ' ' + kind : '');
+}
+
+function fillVoiceSelect(value) {
+  const sel = $('voice');
+  sel.innerHTML = '';
+  for (const v of VOICES) {
+    const opt = document.createElement('option');
+    opt.value = v === '（默认）' ? '' : v;
+    opt.textContent = v;
+    sel.appendChild(opt);
+  }
+  const known = VOICES.includes(value) || value === '';
+  sel.value = known ? (value || '') : '';
+  $('voiceCustom').value = known ? '' : (value || '');
+}
+
+function fillModelSelect(models, value) {
+  const sel = $('model');
+  sel.innerHTML = '';
+  const list = [...models];
+  if (value && !list.includes(value)) list.unshift(value);
+  if (!list.length) list.push('');
+  for (const m of list) {
+    const opt = document.createElement('option');
+    opt.value = m; opt.textContent = m || '（先读取模型）';
+    sel.appendChild(opt);
+  }
+  sel.value = value || list[0];
+}
+
+function renderStatus(c) {
+  const pill = $('statusPill');
+  const custom = c.custom || {};
+  if (c.provider === 'edge' || c.provider === 'sapi') {
+    pill.className = 'pill ok';
+    pill.textContent = '就绪（' + c.provider + ' 引擎）';
+    return;
+  }
+  if (!custom.ready) {
+    pill.className = 'pill warn';
+    const miss = (custom.missing || []).join('、');
+    pill.textContent = '还缺：' + (miss || 'url');
+    return;
+  }
+  if (!custom.hasApiKey) {
+    // 地址和模板都有、但没密钥：auto 模式还能用 edge 兜底，custom 模式就直接失败
+    pill.className = 'pill warn';
+    pill.textContent = c.provider === 'auto' ? '缺密钥（会用 edge 兜底）' : '缺密钥';
+    return;
+  }
+  pill.className = 'pill ok';
+  pill.textContent = '就绪' + (custom.model ? '：' + custom.model : '');
+}
+
+async function loadConfig() {
+  const r = await fetch('/api/config').then(x => x.json());
+  if (!r.ok) { setMsg($('saveMsg'), r.error || '读取失败', 'err'); return; }
+  cfg = r.config;
+  defaults = cfg.defaults || { headers: '', body: '' };
+  const c = cfg.custom || {};
+  $('url').value = c.url || '';
+  $('method').value = c.method || 'POST';
+  $('format').value = c.format || 'mp3';
+  $('timeoutMs').value = c.timeoutMs || 60000;
+  $('provider').value = cfg.provider || 'auto';
+  $('fallback').checked = cfg.fallbackToEdge === true;
+  $('headersText').value = c.headersText || defaults.headers;
+  $('bodyText').value = c.bodyText || defaults.body;
+  fillModelSelect([], c.model || '');
+  fillVoiceSelect(c.voice || '');
+  currentVoice = c.voice || '';
+  $('keyState').textContent = c.hasApiKey ? '已配置（留空不改）' : '还没配密钥';
+  renderStatus(cfg);
+}
+
+async function save(patch, msgEl, okText) {
+  const payload = Object.assign({
+    provider: $('provider').value,
+    fallback: $('fallback').checked,
+    url: $('url').value.trim(),
+    method: $('method').value,
+    model: $('model').value,
+    voice: ($('voiceCustom').value.trim() || $('voice').value || ''),
+    format: $('format').value,
+    timeoutMs: Number($('timeoutMs').value || 60000),
+    headersText: $('headersText').value,
+    bodyText: $('bodyText').value
+  }, patch || {});
+  // 密钥留空 = 不修改
+  const key = $('apiKey').value.trim();
+  if (key) payload.apiKey = key;
+
+  setMsg(msgEl, '保存中…');
+  const r = await fetch('/api/config', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload)
+  }).then(x => x.json()).catch(e => ({ ok: false, error: String(e) }));
+
+  if (!r.ok) { setMsg(msgEl, r.error || '保存失败', 'err'); return false; }
+  if (r.config) { cfg = r.config; renderStatus(cfg); }
+  $('apiKey').value = '';
+  if (cfg && cfg.custom) {
+    $('keyState').textContent = cfg.custom.hasApiKey ? '已配置（留空不改）' : '还没配密钥';
+  }
+  setMsg(msgEl, okText || '已保存并生效', 'ok');
+  return true;
+}
+
+// —— 交互 ——
+$('saveAll').addEventListener('click', () => save(null, $('saveMsg'), '已保存并立即生效'));
+$('saveHeaders').addEventListener('click', () => save({ headersText: $('headersText').value }, $('headersMsg'), '请求头已保存'));
+$('saveBody').addEventListener('click', () => save({ bodyText: $('bodyText').value }, $('bodyMsg'), '请求体已保存'));
+
+$('resetHeaders').addEventListener('click', () => {
+  if (!defaults.headers) return setMsg($('headersMsg'), '没拿到初始模板', 'err');
+  if (!confirm('复原为出厂请求头？当前的请求头会被覆盖（复原后立即保存）。')) return;
+  $('headersText').value = defaults.headers;
+  save({ headersText: defaults.headers }, $('headersMsg'), '已复原为出厂请求头');
+});
+
+$('resetBody').addEventListener('click', () => {
+  if (!defaults.body) return setMsg($('bodyMsg'), '没拿到初始模板', 'err');
+  if (!confirm('复原为出厂请求体？当前的请求体会被覆盖（复原后立即保存）。')) return;
+  $('bodyText').value = defaults.body;
+  save({ bodyText: defaults.body }, $('bodyMsg'), '已复原为出厂请求体');
+});
+
+document.querySelectorAll('.chip[data-preset]').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if (chip.dataset.preset === 'mimo') $('url').value = 'https://api.xiaomimimo.com/v1/chat/completions';
+    if (chip.dataset.preset === 'openai') $('url').value = 'https://api.openai.com/v1/audio/speech';
+  });
+});
+
+$('loadModels').addEventListener('click', async () => {
+  const btn = $('loadModels');
+  btn.disabled = true;
+  setMsg($('modelsMsg'), '读取中…');
+  try {
+    const r = await fetch('/api/models').then(x => x.json());
+    if (!r.ok) { setMsg($('modelsMsg'), r.error || '读取失败', 'err'); return; }
+    fillModelSelect(r.models || [], $('model').value);
+    setMsg($('modelsMsg'), '读到 ' + (r.models || []).length + ' 个模型', 'ok');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function stopPlay() {
+  const a = $('player');
+  a.pause();
+  a.currentTime = 0;
+  a.removeAttribute('src');
+  if (playing) { URL.revokeObjectURL(playing); playing = null; }
+}
+
+$('stop').addEventListener('click', () => { stopPlay(); setMsg($('playMsg'), '已停止', ''); });
+
+$('play').addEventListener('click', async () => {
+  const text = $('testText').value.trim();
+  if (!text) return setMsg($('playMsg'), '先写点要念的话', 'err');
+  stopPlay();
+  const btn = $('play');
+  btn.disabled = true;
+  setMsg($('playMsg'), '合成中…');
+  try {
+    const res = await fetch('/api/preview', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        text,
+        voice: $('voiceCustom').value.trim() || $('voice').value || '',
+        format: $('format').value,
+        model: $('model').value
+      })
+    });
+    if (!res.ok) {
+      const j = await res.json().catch(() => ({ error: 'HTTP ' + res.status }));
+      setMsg($('playMsg'), j.error || '合成失败', 'err');
+      return;
+    }
+    const engine = decodeURIComponent(res.headers.get('x-tts-engine') || '');
+    const voice = decodeURIComponent(res.headers.get('x-tts-voice') || '');
+    const blob = await res.blob();
+    playing = URL.createObjectURL(blob);
+    const a = $('player');
+    a.src = playing;
+    a.onended = stopPlay;
+    await a.play();
+    setMsg($('playMsg'), '播放中：' + engine + (voice ? '｜' + voice : '') + '｜' + Math.round(blob.size / 1024) + ' KB', 'ok');
+  } catch (e) {
+    setMsg($('playMsg'), String(e && e.message || e), 'err');
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+$('voice').addEventListener('change', () => { if ($('voice').value) $('voiceCustom').value = ''; });
+
+loadConfig().catch(e => setMsg($('saveMsg'), '初始化失败：' + e.message, 'err'));
+</script>
+</body>
+</html>

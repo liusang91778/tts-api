@@ -1,0 +1,21 @@
+{
+  "_说明": "复制成 tts.config.json 再改。apiKey 不要提交进仓库（.gitignore 已忽略 tts.config.json）。",
+  "provider": "auto",
+  "fallback": true,
+  "custom": {
+    "url": "https://api.xiaomimimo.com/v1/chat/completions",
+    "method": "POST",
+    "apiKey": "",
+    "headersText": "{\n  \"api-key\": \"{密钥}\",\n  \"Content-Type\": \"application/json\"\n}",
+    "bodyText": "{\n  \"model\": \"{模型}\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"请用这个音色把下面这段话念出来。\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"{要念的话}\"\n    }\n  ],\n  \"audio\": {\n    \"format\": \"{格式}\",\n    \"voice\": \"{音色}\"\n  }\n}",
+    "format": "mp3",
+    "voice": "冰糖",
+    "model": "mimo-v2.5-tts",
+    "voiceMode": "id",
+    "voiceFile": "",
+    "responseType": "auto",
+    "responsePath": "",
+    "responseEncoding": "base64",
+    "timeoutMs": 60000
+  }
+}

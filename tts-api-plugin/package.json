@@ -1,0 +1,50 @@
+{
+  "name": "tts-api-plugin",
+  "version": "0.1.1",
+  "description": "可插拔的文字转语音（TTS）引擎：一套核心 + 命令行 + 参考服务端 + 网页配置界面，外加 qq-bridge 的一键安装器（装成 MCP 工具给 AI 用）。支持任意 OpenAI 兼容 / 自定义 HTTP 接口，也支持离线 Edge TTS 与本机 SAPI。",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "main": "./src/tts.mjs",
+  "exports": {
+    ".": "./src/tts.mjs",
+    "./server": "./src/server.mjs"
+  },
+  "bin": {
+    "tts-api": "./src/cli.mjs"
+  },
+  "scripts": {
+    "cli": "node ./src/cli.mjs",
+    "serve": "node ./src/server.mjs",
+    "web": "node ./src/server.mjs --port 8899",
+    "check": "node ./examples/tts-check.mjs",
+    "defaults": "node ./src/cli.mjs --print-defaults",
+    "models": "node ./src/cli.mjs --list-models",
+    "install": "node ./install.mjs",
+    "uninstall": "node ./install.mjs --uninstall"
+  },
+  "files": [
+    "src/",
+    "examples/",
+    "docs/",
+    "README.md",
+    "INSTALL.md",
+    "install.mjs",
+    "tts.config.example.json",
+    "LICENSE"
+  ],
+  "keywords": [
+    "tts",
+    "text-to-speech",
+    "openai-compatible",
+    "edge-tts",
+    "sapi",
+    "voice-clone",
+    "voice-design",
+    "web-ui",
+    "qq-bridge",
+    "mcp"
+  ]
+}
